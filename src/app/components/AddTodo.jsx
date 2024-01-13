@@ -12,11 +12,13 @@ import Link from "next/link";
 
 const AddTodo = () => {
   const [todo, setTodo] = useState({ task: "", description: "" });
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -25,7 +27,7 @@ const AddTodo = () => {
   const addTodo = async (e) => {
     e.preventDefault();
     try {
-      if (todo.task !== "" && todo.description !== "") {
+      if (todo.task !== "" ) {
         const userUid = user.uid; // Get the user's UID
         console.log(userUid, user.displayName);
         await addDoc(collection(db, "todo"), {
@@ -35,11 +37,13 @@ const AddTodo = () => {
           userEmail: user.email,
           userUid: userUid, // Include the user's UID in the document
         });
+        setTodo({ task: "", description: "" });
 
         alert("Todo added successfully . Click on Mytodos to check");
       }
       else{
         alert("add task and description")
+        
       }
     } catch (error) {
       console.error("Error adding todo:", error);
@@ -54,6 +58,10 @@ const AddTodo = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider);
   };
+  if (loading) {
+   
+    return <div></div>;
+  }
 
   return (
     <>
@@ -105,7 +113,7 @@ const AddTodo = () => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center mt-60 bg-slate-400">
+        <div className="flex flex-col items-center mt-60 ">
           <h1 className="font-medium ">To add ToDo please Signup first</h1>
 
           <div class="px-6 sm:px-0 max-w-sm mt-4">

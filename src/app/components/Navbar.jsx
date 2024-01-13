@@ -6,7 +6,7 @@ import {X} from "lucide-react"
 
 const Navbar = () => {
   const navitems = [
-    { navitem: "Add a ToDO", href: "/" },
+    { navitem: "Add a ToDo", href: "/" },
     { navitem: "My ToDos", href: "/mytodos" },
     { navitem: "Login", href: "/login" },
   ];

@@ -6,55 +6,65 @@ import Navbar from "../components/Navbar";
 import { deleteDoc, doc, onSnapshot, query, updateDoc, collection, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { UserAuth } from "../context/AuthContext";
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase';
 
-const getRandomColor = () => {
+const generateRandomColors = (count) => {
+  const colors = [];
   const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
+  
+  for (let i = 0; i < count; i++) {
+    let color = "#";
+    for (let j = 0; j < 6; j++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    colors.push(color);
   }
-  return color;
+
+  return colors;
 };
 
 const page = () => {
   const [todos, setTodos] = useState([]);
-  
-  const [editMode, setEditMode] = useState(null);
-  
+  const [editMode, setEditMode] = useState(false);
   const [editedTodo, setEditedTodo] = useState({ task: "", description: "" });
+  const [loading, setLoading] = useState(true);
+
   const { user } = UserAuth(); 
   const userUid = user?.uid;
-  const displayName=user?.displayName 
-  
-  
+  const displayName = user?.displayName;
+
+  const initialColors = generateRandomColors(10); // Replace 10 with your desired number of initial todos
+  const [todoColors] = useState(initialColors);
 
   useEffect(() => {
-    if (!userUid) {
-      // Don't proceed if userUid is not available yet
-      return;
-    }
-  
-    const q = query(collection(db, "todo"), where("userUid", "==", userUid));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      let todoArr = [];
-      querySnapshot.forEach((doc) => {
-        todoArr.push({ ...doc.data(), id: doc.id });
-      });
-      setTodos(todoArr);
-    });
-  
-    // Generate random colors for each todo item and store them in state
-   
-  
-    return () => unsubscribe();
-  }, [ userUid,user]);
+    const fetchData = async () => {
+      if (!userUid) {
+        
+        return;
+      }
 
- 
-  
+      try {
+        const q = query(collection(db, "todo"), where("userUid", "==", userUid));
+        const querySnapshot = await onSnapshot(q, (snapshot) => {
+          let todoArr = [];
+          snapshot.forEach((doc) => {
+            todoArr.push({ ...doc.data(), id: doc.id });
+          });
 
-const handleSignInWithGoogle = () => {
+          setTodos(todoArr);
+          setLoading(false);
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userUid, user]);
+
+  const handleSignInWithGoogle = () => {
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider);
   };
@@ -82,9 +92,15 @@ const handleSignInWithGoogle = () => {
     exitEditMode();
   };
 
+console.log(loading)
+  if (loading) {
+   
+    return <div></div>;
+  }
+
   return (
     <div>
-      { user?
+      { user ?
       <div>
       <Navbar />
       <section className="text-gray-600 body-font">
@@ -100,7 +116,7 @@ const handleSignInWithGoogle = () => {
                 <div className="p-4">
                   <div
                     className="flex rounded-lg h-full p-8 flex-row justify-between"
-                    style={{ backgroundColor: getRandomColor() }}
+                    style={{ backgroundColor: todoColors[index] }}
                   >
                     {editMode === item.id ? (
                       <div className="flex flex-col">
@@ -118,8 +134,8 @@ const handleSignInWithGoogle = () => {
                           />
                         </div>
                         <div className="flex-grow">
-                          <textarea
-                            className=" text-black leading-relaxed text-base rounded-sm"
+                          <textarea rows="4" 
+                            className=" text-black resize-none  leading-relaxed text-base rounded-sm lg:w-[75%] w-[75%]"
                             value={editedTodo.description}
                             onChange={(e) =>
                               setEditedTodo({
@@ -147,7 +163,7 @@ const handleSignInWithGoogle = () => {
                     )}
                     <div className="flex flex-col items-end">
                       {editMode === item.id ? (
-                        <div>
+                        <div className="flex flex-col lg:flex-row">
                           <button
                             className="text-white text-center bg-green-500 px-3 py-1 rounded"
                             onClick={() => saveEditedTodo(item.id)}
@@ -155,7 +171,7 @@ const handleSignInWithGoogle = () => {
                             Save
                           </button>
                           <button
-                            className="text-white bg-red-500 px-3 py-1 rounded lg:ml-2"
+                            className="text-white bg-red-500 px-3 py-1 rounded lg:mt-0 mt-4 lg:ml-2"
                             onClick={exitEditMode}
                           >
                             Cancel
@@ -191,14 +207,14 @@ const handleSignInWithGoogle = () => {
   <div className="flex flex-col items-center mt-60">
     <h1 className="font-medium ">To add ToDo please Signup first</h1>
 
-    <div class="px-6 sm:px-0 max-w-sm mt-4">
+    <div className="px-6 sm:px-0 max-w-sm mt-4">
       <button
         onClick={handleSignInWithGoogle}
         type="button"
-        class="text-white w-full  bg-[#4285F4] hover:bg-[#4285F4]/90 focus:ring-4 focus:outline-none focus:ring-[#4285F4]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center justify-between dark:focus:ring-[#4285F4]/55 mr-2 mb-2"
+        className="text-white w-full  bg-[#4285F4] hover:bg-[#4285F4]/90 focus:ring-4 focus:outline-none focus:ring-[#4285F4]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center justify-between dark:focus:ring-[#4285F4]/55 mr-2 mb-2"
       >
         <svg
-          class="mr-2 -ml-1 w-4 h-4"
+          className="mr-2 -ml-1 w-4 h-4"
           aria-hidden="true"
           focusable="false"
           data-prefix="fab"
